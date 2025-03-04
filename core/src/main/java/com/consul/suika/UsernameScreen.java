@@ -55,6 +55,7 @@ public class UsernameScreen implements Screen {
         ImageButton nextButton = new ImageButton(nextButtonDrawable);
         nextButton.setPosition(-50, -4);
         nextButton.setSize(200, 200);
+        Gdx.input.setOnscreenKeyboardVisible(true);
 
         nextButton.addListener(new ClickListener() {
             @Override

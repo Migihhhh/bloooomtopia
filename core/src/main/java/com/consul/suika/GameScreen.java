@@ -8,6 +8,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 public class GameScreen implements Screen {
 
     private Game game;
+    private int score = 0;
 
     public GameScreen(Game game) {
         this.game = game;
@@ -153,10 +155,15 @@ public class GameScreen implements Screen {
     private boolean isSoundEnabled=true;
     private Texture soundButtonTexture,soundButtonPressedTexture;
     private ImageButton soundButton;
+    private BitmapFont scoreFont;
     private ApplicationListener currentListener;// The active game or menu
 
     @Override
     public void show() {
+        scoreFont = new BitmapFont();
+        scoreFont.getData().setScale(3); // Try a larger scale
+        scoreFont.setColor(Color.BLACK); // Use black if the background is light
+
         shapeRenderer = new ShapeRenderer();
         background = new Texture("gameBackground.png");
         daffidol = new Texture("flower1.png");
@@ -179,11 +186,15 @@ public class GameScreen implements Screen {
         viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM);
         camera = (OrthographicCamera) viewport.getCamera();
 
+
+
         floatingFlowerSprite = new Sprite(daffidol);
         floatingFlowerSprite.setSize(currentFlowerType.getRadius() * 2, currentFlowerType.getRadius() * 2); // Set size based on radius
         float startX = (WORLD_WIDTH / PPM - floatingFlowerSprite.getWidth()) / 6; // Center horizontally
         float startY = 135 / PPM; // Fixed height (adjust as needed)
         floatingFlowerSprite.setPosition(startX, startY);
+
+
 
 
         currentFlowerType = FlowerType.DAFFODIL;
@@ -547,10 +558,15 @@ public class GameScreen implements Screen {
             batch.begin();
             batch.draw(background, 0, 0, WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM);
 
+
+
             // Draw the floating flower
             if (isGameActive) { // shu change: only draw the floating flower if the game is active
                 floatingFlowerSprite.draw(batch);
             }
+            Gdx.app.log("Rendering Score", "Score: " + score);
+
+
 
             // Draw existing flowers
             for (Body body : flowers) {
@@ -566,10 +582,18 @@ public class GameScreen implements Screen {
                 }
             }
 
+            String scoreText = "Score: " + score;
+            float scoreX = (WORLD_WIDTH / PPM) / 2 - 0.2f; // Center horizontally in world units
+            float scoreY = WORLD_HEIGHT / PPM - 0.1f;     // Near the top in world units
+            scoreFont.draw(batch, scoreText, scoreX, scoreY);
+
             // Draw the next flower
             if (isGameActive) { // shu change: only draw the next flower if the game is active
                 renderNextFlower(batch);
+
+
             }
+
 
 
             batch.end();
@@ -775,6 +799,10 @@ public class GameScreen implements Screen {
             return null;
         }
 
+        if (!isMerging) {
+            score += 1; // Add 1 point for dropping a flower
+        }
+
         BodyDef def = new BodyDef();
         def.type = BodyDef.BodyType.DynamicBody;
         def.position.set(x, y);
@@ -875,6 +903,9 @@ public class GameScreen implements Screen {
         restartStage.dispose();
         music.dispose();
         leaderboardBatch.dispose();
+        if (scoreFont != null) {
+            scoreFont.dispose(); // Dispose of the font
+        }
 
         //STEP 5 OF ADDING NEW FLOWER: DISPOSE FLOWER FOR BETTER PERFORMANCE I.E "newFlower.dispose();"
 
@@ -940,12 +971,16 @@ public void update(float delta) {
                     world.destroyBody(flowerB);
                     flowers.removeValue(flowerA, true);
                     flowers.removeValue(flowerB, true);
+
+                    score += dataA.type.getLevel() * 10;
+                    Gdx.app.log("Score", "Current Score: " + score);
                 }
             }
         }
 
         contactListener.clearFlowersToMerge();
     }
+
 }
 //Clearing of flowers in the field
 private void resetGame() {
