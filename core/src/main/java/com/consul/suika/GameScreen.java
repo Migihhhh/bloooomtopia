@@ -27,6 +27,8 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
@@ -35,6 +37,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.Game;
 
+
 import java.util.Arrays;
 
 
@@ -42,6 +45,9 @@ public class GameScreen implements Screen {
 
     private Game game;
     private int score = 0;
+    private Texture[] digitTextures; // Array for 0-9 textures
+    private Array<Image> scoreDigits; // List of digit Images
+    private Image scorePrefix;
 
     public GameScreen(Game game) {
         this.game = game;
@@ -150,19 +156,17 @@ public class GameScreen implements Screen {
     private Texture quitTexture;private TextureRegion quitTextureRegion;private TextureRegionDrawable quitTextureRegionDrawable;private ImageButton quitButton;
     private SpriteBatch leaderboardBatch;
 
+
     Texture leaderboardBG;
     private boolean firstTouch=false;
     private boolean isSoundEnabled=true;
     private Texture soundButtonTexture,soundButtonPressedTexture;
     private ImageButton soundButton;
-    private BitmapFont scoreFont;
     private ApplicationListener currentListener;// The active game or menu
+    private Label scoreLabel;
 
     @Override
     public void show() {
-        scoreFont = new BitmapFont();
-        scoreFont.getData().setScale(3); // Try a larger scale
-        scoreFont.setColor(Color.BLACK); // Use black if the background is light
 
         shapeRenderer = new ShapeRenderer();
         background = new Texture("gameBackground.png");
@@ -224,6 +228,41 @@ public class GameScreen implements Screen {
         //stage for the game ui buttons like pause and retry
         gameStage = new Stage(viewport);
         Gdx.input.setInputProcessor(gameStage);
+
+        // Initialize digit textures
+        digitTextures = new Texture[10];
+        for (int i = 0; i < 10; i++) {
+            try {
+                digitTextures[i] = new Texture(i + ".png");
+                Gdx.app.log("DigitLoad", "Loaded " + i + ".png");
+            } catch (Exception e) {
+                Gdx.app.log("DigitError", "Failed to load " + i + ".png: " + e.getMessage());
+                // Use a fallback texture (e.g., daffidol) if a digit is missing
+                digitTextures[i] = daffidol;
+            }
+        }
+
+        // Initialize scoreDigits array
+        scoreDigits = new Array<>();
+
+        // Add optional "Score:" prefix
+        try {
+            scorePrefix = new Image(new Texture("score_prefix.png"));
+            scorePrefix.setPosition(viewportWidth / 2 - 0.3f, viewportHeight / 2 + 0.40f);
+            scorePrefix.setSize(0.3f, 0.1f); // Adjust size based on your texture
+            gameStage.addActor(scorePrefix);
+            Gdx.app.log("ScorePrefix", "Score prefix loaded");
+        } catch (Exception e) {
+            Gdx.app.log("ScorePrefix", "score_prefix.png not found: " + e.getMessage());
+        }
+
+        // Initial score display
+        updateScoreDisplay();
+
+//        Image testImage = new Image(daffidol);
+//        testImage.setPosition(viewportWidth / 2, viewportHeight / 2);
+//        testImage.setSize(0.2f, 0.2f);
+//        gameStage.addActor(testImage);
 
 
         //pause button // size positioning
@@ -523,6 +562,31 @@ public class GameScreen implements Screen {
             }
         });
     }
+    private void updateScoreDisplay() {
+        for (Image digit : scoreDigits) {
+            digit.remove();
+        }
+        scoreDigits.clear();
+
+        String scoreStr = String.valueOf(score);
+        float digitWidth = 0.1f;
+        float digitHeight = 0.1f;
+        float startX = viewport.getWorldWidth() / 2;
+        float y = (1.528f + viewport.getWorldHeight()) / 2;
+
+        float totalWidth = scoreStr.length() * digitWidth;
+        startX -= totalWidth / 2;
+
+        for (int i = 0; i < scoreStr.length(); i++) {
+            int digit = Character.getNumericValue(scoreStr.charAt(i));
+            Image digitImage = new Image(digitTextures[digit]);
+            digitImage.setSize(digitWidth, digitHeight);
+            digitImage.setPosition(startX + i * digitWidth, y);
+            gameStage.addActor(digitImage);
+            scoreDigits.add(digitImage);
+        }
+        Gdx.app.log("ScoreDisplay", "Updated score to: " + scoreStr + " at x: " + startX);
+    }
 
     @Override
     public void render(float delta) {
@@ -556,7 +620,10 @@ public class GameScreen implements Screen {
             viewport.apply();
 
             batch.begin();
+
             batch.draw(background, 0, 0, WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM);
+
+
 
 
 
@@ -582,10 +649,7 @@ public class GameScreen implements Screen {
                 }
             }
 
-            String scoreText = "Score: " + score;
-            float scoreX = (WORLD_WIDTH / PPM) / 2 - 0.2f; // Center horizontally in world units
-            float scoreY = WORLD_HEIGHT / PPM - 0.1f;     // Near the top in world units
-            scoreFont.draw(batch, scoreText, scoreX, scoreY);
+
 
             // Draw the next flower
             if (isGameActive) { // shu change: only draw the next flower if the game is active
@@ -623,6 +687,7 @@ public class GameScreen implements Screen {
                 gameOverStage.draw();
             }
 
+            updateScoreDisplay();
             gameStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
             gameStage.draw();
         }
@@ -903,9 +968,7 @@ public class GameScreen implements Screen {
         restartStage.dispose();
         music.dispose();
         leaderboardBatch.dispose();
-        if (scoreFont != null) {
-            scoreFont.dispose(); // Dispose of the font
-        }
+
 
         //STEP 5 OF ADDING NEW FLOWER: DISPOSE FLOWER FOR BETTER PERFORMANCE I.E "newFlower.dispose();"
 
