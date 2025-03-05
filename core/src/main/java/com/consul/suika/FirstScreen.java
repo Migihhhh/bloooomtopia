@@ -217,7 +217,7 @@ public class FirstScreen implements Screen {
                 Gdx.app.log("mainMenuPlayButton", "Play Button clicked");
                 mainMenuButtonSound.play();
                 Gdx.input.setInputProcessor(gamemodeStage);
-                game.setScreen(new UsernameScreen(game)); // Pass the Game instance
+                game.setScreen(new GameScreen(game)); // Pass the Game instance
             }
         });
 

@@ -372,6 +372,7 @@ public class GameScreen implements Screen {
                 isPaused=false;
                 isTouching = false;
                 Gdx.input.setInputProcessor(gameStage);
+                score = 0;
             }
         });
 
